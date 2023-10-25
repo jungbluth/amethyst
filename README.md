@@ -6,7 +6,7 @@ AOML Metagenomics Workflow
 
 A separate environment is used for each section of the workflow. Environments can be user-created or shared (e.g., `conda activate /home/cns.local/luke.thompson/miniconda3/envs/mg-qc`).
 
-### 0.1. Sequence QC and trimming
+### 0.1. Sequence QC 
 
 * fastqc
 * multiqc
@@ -17,7 +17,15 @@ A separate environment is used for each section of the workflow. Environments ca
 mamba create -n mg-qc -c bioconda fastqc multiqc fastp seqkit
 ```
 
-### 0.2. Coverage and normalization
+### 0.2. Sequence Trimming
+
+* multitrim
+
+```
+curl https://raw.githubusercontent.com/KGerhardt/multitrim/master/multitrim.yml > multitrim.yml
+mamba create -n mg-trim -f multitrim.yml
+```
+### 0.3. Coverage and normalization
 
 * nonpareil
 * bbtools
@@ -26,7 +34,7 @@ mamba create -n mg-qc -c bioconda fastqc multiqc fastp seqkit
 mamba create -n mg-coverage -c bioconda -c agbiome nonpareil bbtools seqkit
 ```
 
-### 0.3. Taxonomic and functional diversity
+### 0.4. Taxonomic and functional diversity
 
 * mash
 * sourmash
@@ -39,7 +47,7 @@ mamba create -n mg-coverage -c bioconda -c agbiome nonpareil bbtools seqkit
 mamba create -n mg-diversity -c bioconda -c biobakery sourmash krona humann metaphlan seqkit
 ```
 
-### 0.4. Assembly and annotation
+### 0.5. Assembly and annotation
 
 * spades
 * prodigal
@@ -51,7 +59,7 @@ mamba create -n mg-diversity -c bioconda -c biobakery sourmash krona humann meta
 mamba create -n mg-assembly -c bioconda spades prodigal prokka kofamscan seqkit
 ```
 
-### 0.5. Binning, mapping, QC, dereplication, and taxonomy
+### 0.6. Binning, mapping, QC, dereplication, and taxonomy
 
 * bowtie2
 * minimap2
