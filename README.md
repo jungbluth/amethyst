@@ -28,10 +28,10 @@ mamba create -n mg-trim -f multitrim.yml
 ### 0.3. Coverage and normalization
 
 * nonpareil
-* bbtools
+* bbmap
 * seqkit
 ```
-mamba create -n mg-coverage -c bioconda -c agbiome nonpareil bbtools seqkit
+mamba create -n mg-coverage -c bioconda -c agbiome nonpareil bbmap seqkit
 ```
 
 ### 0.4. Taxonomic and functional diversity
