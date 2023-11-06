@@ -1,0 +1,13 @@
+name: multitrim
+dependencies:
+  - faqcs
+  - falco
+  - seqtk
+  - fastp
+  - pigz
+  - multitrim
+  
+channels:
+  - conda-forge
+  - bioconda
+  - kgerhardt
