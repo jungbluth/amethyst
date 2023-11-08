@@ -12,6 +12,8 @@ rule read_qc:
     input:
         "00_data/fastq/"
     output:
+	"00_data/fastq/fastqc-R1/"
+	"00_data/fastq/fastqc-R2/"
     conda: 
         "mg-qc"
     shell: 
@@ -19,13 +21,22 @@ rule read_qc:
 
 rule adapt_trim:
     input:
-	"/00_data/fastq"
+	"00_data/fastq"
     output:
+	"01_qc/trimmed_reads"
     conda:
         "multitrim"
     shell:
         "scripts/adapt_trim.sh"
 
+rule assembly:
+    input:
+	"01_qc/trimmed_reads/"
+    output:
+    conda:
+	"mg-assembly"
+    shell: 
+        "scripts/assembly.sh"
 
         
 
