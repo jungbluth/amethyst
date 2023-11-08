@@ -14,7 +14,7 @@ A separate environment is used for each section of the workflow. Environments ca
 * seqkit
 
 ```
-mamba create -n mg-qc -c bioconda fastqc 
+mamba create -n mg-qc -c bioconda fastqc multiqc
 ```
 
 ### 0.2. Sequence Trimming
