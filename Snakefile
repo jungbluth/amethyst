@@ -22,7 +22,7 @@ rule adapt_trim:
 	"/00_data/fastq"
     output:
     conda:
-        "mg-trim"
+        "multitrim"
     shell:
         "scripts/adapt_trim.sh"
 
