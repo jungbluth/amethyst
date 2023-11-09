@@ -9,3 +9,15 @@ v. 1.0
 
 To get started, please see the [Quick Start Guide](https://github.com/rckarns8/amethyst/wiki/0.-Quick-Start-Guide)
 
+
+
+Features to add in new versions: 
+- overarching rules to combine pseudo rules
+- benchmarking
+- init file to make all conda environments needed to run amethyst
+- yaml files for conda environments needed to run amethyst
+- fix issue where adapt_trim is overwriting temp files for each sample
+- choice of assembler
+- read-based analyses and gene annotation
+- Binning for MAGS
+- Docker Containers 
