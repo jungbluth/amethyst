@@ -12,6 +12,7 @@ To get started, please see the [Quick Start Guide](https://github.com/rckarns8/a
 
 
 Features to add in new versions: 
+- co-assembly capabilities
 - overarching rules to combine pseudo rules
 - benchmarking
 - init file to make all conda environments needed to run amethyst
