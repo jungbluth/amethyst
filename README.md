@@ -12,6 +12,7 @@ To get started, please see the [Quick Start Guide](https://github.com/rckarns8/a
 
 
 Features to add in new versions: 
+- config file to globally update variables
 - co-assembly capabilities
 - overarching rules to combine pseudo rules
 - benchmarking
