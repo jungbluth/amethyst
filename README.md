@@ -13,11 +13,6 @@ v. 1.0
 To get started, please see the [Quick Start Guide](https://github.com/rckarns8/amethyst/wiki/0.-Quick-Start-Guide)
 
 
-Placeholded Metagenomics Overview:
-![image](https://github.com/rckarns8/amethyst/assets/42095420/9f0348e1-4bba-4cf9-bdfc-9b814e738c68)
-
-
-
 # Roadmap:
 Note- this is a prioritized list of features to add to Amethyst. This is subject to change.
 | Program      | Function                          | Status      |
