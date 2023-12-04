@@ -1,7 +1,7 @@
 ![image](https://github.com/rckarns8/amethyst/assets/42095420/f9da1bd9-250e-4607-8512-a125088eabed)
 
 
-Written 2023, by Rachael Storo. Based on a workflow written by Nastassia Patin.
+Written 2023, by Rachael Storo. Contributions by Giles Goetz. Based on a workflow written by Nastassia Patin.
 v. 1.0
 # Important notes:
 - Amethyst requires python >3.6 
