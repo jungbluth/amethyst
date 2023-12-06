@@ -97,6 +97,31 @@ rule multitrim:
         mv {params.tempfolder2}/* {params.outfolder2}
         rmdir {params.tempfolder2}
         """
+# Run bbnorm
+#
+rule bbnorm:
+    conda:
+        "mg-norm"
+    input:
+        r1 = "01_qc/trimmed_reads/R1/unpaired.post_trim_R1_{sample}_R1.fq.gz",
+        r2 = "01_qc/trimmed_reads/R2/unpaired.post_trim_R2_{sample}_R2.fq.gz"
+    output:
+        "01_qc/{sample}/{sample}normalized.fq"
+    params:
+        r1 = "02_assembly/{sample}_R1.fq",
+        r2 = "02_assembly/{sample}_R2.fq",
+        sample = "{sample}",
+        outfolder = "01_qc/normalized/{sample}"
+    threads: 20
+    log:
+        "logs/bbnorm/{sample}.log"
+    benchmark:
+        "benchmarks/bbnorm/{sample}.txt"
+    shell:
+        """
+        bbnorm.sh in=s{input.r1} in2=s{input.r2} out=sample1-bbnorm.fq.gz \
+target=100 min=5 interleaved=FALSE
+        """
 
 # Run megahit
 # snakemake will create the output folders since that is the location of the 
