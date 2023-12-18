@@ -1,28 +1,34 @@
 # Grab a list of all the samples
 # Assumes all the file names have the format R[12]_{sample}_R[12].fastq
-SAMPLES = glob_wildcards("00_data/fastq/R1/R1_{sample}_R1.fastq").sample
+SAMPLES, = glob_wildcards("00_data/fastq/R1/R1_{sample}_R1.fastq")
 
 # Master rule that snakemake uses to determine which files need to be 
 # generated. 
 rule all:
     input:
+        expand("00_data/fastq/R1/R1_{sample}_R1.fastq", 
+            sample=SAMPLES),
+        expand("00_data/fastq/R2/R2_{sample}_R2.fastq", 
+            sample=SAMPLES),
         expand("00_data/fastq/fastqc-R1/R1_{sample}_R1_fastqc.html", 
             sample=SAMPLES),
         expand("00_data/fastq/fastqc-R2/R2_{sample}_R2_fastqc.html", 
             sample=SAMPLES),
         "00_data/fastq/fastqc-R1/multiqc_report.html",
         "00_data/fastq/fastqc-R2/multiqc_report.html",
-        expand("01_qc/trimmed_reads/R1/unpaired.post_trim_R1_{sample}_R1.fq.gz",
+        expand("01_qc/trimmed_reads/test/{sample}_1.fq.gz",
             sample=SAMPLES),
-        expand("01_qc/trimmed_reads/R2/unpaired.post_trim_R2_{sample}_R2.fq.gz",
+        expand("01_qc/trimmed_reads/test/{sample}_2.fq.gz", 
             sample=SAMPLES),
-        expand("02_assembly/{sample}/{sample}.contigs.fa",
+        expand("01_qc/normalized/{sample}_normalized.fq.gz", 
             sample=SAMPLES)
+     #  expand("02_assembly/{sample}/{sample}.contigs.fa", 
+       #     sample=SAMPLES)
 
 # Run all the samples through FastQC 
 rule fastqc: 
     conda: 
-        "amethyst-testing-qc"
+        "mg-qc"
     input:
         r1 = "00_data/fastq/R1/R1_{sample}_R1.fastq",
         r2 = "00_data/fastq/R2/R2_{sample}_R2.fastq"
@@ -46,7 +52,7 @@ rule fastqc:
 # Run MultiQC on the FastQC reports
 rule multiqc:
     conda:
-        "amethyst-testing-qc"
+        "mg-qc"
     output:
         "00_data/fastq/fastqc-R1/multiqc_report.html",
         "00_data/fastq/fastqc-R2/multiqc_report.html"
@@ -63,55 +69,52 @@ rule multiqc:
         multiqc --export -o {params.outfolder2} {params.outfolder2}
         """
 
-# Run multitrim
-# multitrim generates files with the same name so we have to create a 
-# temp folder for each run. One thing to look at in the future is using
-# its --prefix option.
-rule multitrim:
-    conda:
-        "amethyst-testing-mt"
+# Run fastp
+rule fastp:
+    conda: 
+        "mg-trim"
     input:
         r1 = "00_data/fastq/R1/R1_{sample}_R1.fastq",
         r2 = "00_data/fastq/R2/R2_{sample}_R2.fastq"
     output:
-        "01_qc/trimmed_reads/R1/unpaired.post_trim_R1_{sample}_R1.fq.gz",
-        "01_qc/trimmed_reads/R2/unpaired.post_trim_R2_{sample}_R2.fq.gz"
+        o1 = "01_qc/trimmed_reads/test/{sample}_1.fq.gz",
+        o2 = "01_qc/trimmed_reads/test/{sample}_2.fq.gz"
     params:
-        outfolder1 = "01_qc/trimmed_reads/R1",
-        outfolder2 = "01_qc/trimmed_reads/R2",
-        tempfolder1 = "01_qc/trimmed_reads/R1/{sample}",
-        tempfolder2 = "01_qc/trimmed_reads/R2/{sample}",
-    threads: 5
+        sample=SAMPLES
     log:
-        "logs/multitrim/{sample}.log"
+        "logs/fastp/{sample}.log"
     benchmark:
-        "benchmarks/multitrim/{sample}.txt"
+        "benchmarks/fastp/{sample}.txt"
     shell:
         """
-        mkdir -p {params.tempfolder1}
-        multitrim -u {input.r1} -o {params.tempfolder1} -t {threads}  
-        mv {params.tempfolder1}/* {params.outfolder1}
-        rmdir {params.tempfolder1}
-        mkdir -p {params.tempfolder2}
-        multitrim -u {input.r2} -o {params.tempfolder2} -t {threads}  
-        mv {params.tempfolder2}/* {params.outfolder2}
-        rmdir {params.tempfolder2}
+        fastp \
+        -i {input.r1} \
+        -o {output.o1} \
+        -I {input.r2} \
+        -O {output.o2} \
+        --detect_adapter_for_pe \
+        -g -l 50 -W 4 -M 20 -w 16 \
+        --cut_front \
+        -R {params.sample}_test_report
         """
+
+
 # Run bbnorm
-#
+
 rule bbnorm:
     conda:
         "mg-norm"
     input:
-        r1 = "01_qc/trimmed_reads/R1/unpaired.post_trim_R1_{sample}_R1.fq.gz",
-        r2 = "01_qc/trimmed_reads/R2/unpaired.post_trim_R2_{sample}_R2.fq.gz"
+        r1 = "01_qc/trimmed_reads/test/{sample}_1.fq.gz",
+        r2 = "01_qc/trimmed_reads/test/{sample}_2.fq.gz" 
     output:
-        "01_qc/{sample}/{sample}normalized.fq"
+        o1 = "01_qc/normalized/{sample}_normalized.fq.gz"
     params:
-        r1 = "02_assembly/{sample}_R1.fq",
-        r2 = "02_assembly/{sample}_R2.fq",
-        sample = "{sample}",
-        outfolder = "01_qc/normalized/{sample}"
+        r1 = "01_qc/trimmed_reads/test/{sample}_R1.fq.gz",
+        r2 = "01_qc/trimmed_reads/test/{sample}_R2.fq.gz",
+        sample=SAMPLES,
+        outfolder="01_qc/normalized",
+        script="bbmap/bbnorm.sh"
     threads: 20
     log:
         "logs/bbnorm/{sample}.log"
@@ -119,8 +122,11 @@ rule bbnorm:
         "benchmarks/bbnorm/{sample}.txt"
     shell:
         """
-        bbnorm.sh in=s{input.r1} in2=s{input.r2} out=sample1-bbnorm.fq.gz \
-target=100 min=5 interleaved=FALSE
+        for i in {input.r1};
+        do
+          bbmap/bbnorm.sh in={input.r1} in2={input.r2} out={params.outfolder}/${{i}}_normalized.fq.gz target=100 min=5 interleaved=FALSE -Xmx40g;
+        params.sample=${{i}}
+        done
         """
 
 # Run megahit
@@ -133,22 +139,21 @@ target=100 min=5 interleaved=FALSE
 # situations.
 rule megahit:
     conda:
-        "amethyst-testing-as"
+        "mg-assembly"
     input:
-        r1 = "01_qc/trimmed_reads/R1/unpaired.post_trim_R1_{sample}_R1.fq.gz",
-        r2 = "01_qc/trimmed_reads/R2/unpaired.post_trim_R2_{sample}_R2.fq.gz"
+        r1 = "01_qc/normalized/{params.sample}_normalized.fq",
     output:
-        "02_assembly/{sample}/{sample}.contigs.fa"
+        "02_assembly/{params.sample}/{params.sample}.contigs.fa"
     params:
-        r1 = "02_assembly/{sample}_R1.fq",
-        r2 = "02_assembly/{sample}_R2.fq",
-        sample = "{sample}",
-        outfolder = "02_assembly/{sample}"
+        r1 = "02_assembly/{params.sample}_R1.fq",
+        r2 = "02_assembly/{params.sample}_R2.fq",
+        sample=SAMPLES,
+        outfolder = "02_assembly/{params.sample}"
     threads: 20
     log:
-        "logs/megahit/{sample}.log"
+        "logs/megahit/{params.sample}.log"
     benchmark:
-        "benchmarks/megahit/{sample}.txt"
+        "benchmarks/megahit/{params.sample}.txt"
     shell:
         """
         rm -rf {params.outfolder}
