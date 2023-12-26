@@ -21,15 +21,15 @@ Note- this is a prioritized list of features to add to Amethyst. This is subject
 | multiqc      | read QC                           | complete    |
 | multitrim    | read trimming                     | complete    |
 | megahit      | assembly                          | complete    |
-| bbnorm       | normalization                     | to be added |
-| bowtie2      | assembly coverage analysis        | to be added |
-| prodigal     | gene prediction                   | to be added |
-| prokka       | gene annotation                   | to be added |
-| sourmash     | diversity analysis- assembly based| to be added |
-| maxbin2/vamb | binning                           | to be added |
-| checkm       | bin/MAG quality                   | to be added |
-| dRep         | dereplication of bins/MAGs        | to be added |
-| GTDB-Tk      | taxonomic assignment of bins/MAGs | to be added |
+| bbnorm       | normalization                     | complete    |
+| bowtie2      | assembly coverage analysis        | testing     |
+| prodigal     | gene prediction                   | written     |
+| prokka       | gene annotation                   | written     |
+| sourmash     | diversity analysis- assembly based| written     |
+| maxbin2/vamb | binning                           | written     |
+| checkm       | bin/MAG quality                   | written     |
+| dRep         | dereplication of bins/MAGs        | written     |
+| GTDB-Tk      | taxonomic assignment of bins/MAGs | written     |
 | nonpareil    | read-based coverage analysis      | backlog     |
 | sourmash     | diversity analysis- read based    | backlog     |
 | humann       | functional analysis               | backlog     |
