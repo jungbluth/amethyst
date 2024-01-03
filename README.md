@@ -22,9 +22,9 @@ Note- this is a prioritized list of features to add to Amethyst. This is subject
 | multitrim    | read trimming                     | complete    |
 | megahit      | assembly                          | complete    |
 | bbnorm       | normalization                     | complete    |
-| bowtie2      | assembly coverage analysis        | testing     |
-| prodigal     | gene prediction                   | written     |
-| prokka       | gene annotation                   | written     |
+| bowtie2      | assembly coverage analysis        | tested      |
+| prodigal     | gene prediction                   | tested      |
+| prokka       | gene annotation                   | tested      |
 | sourmash     | diversity analysis- assembly based| written     |
 | maxbin2/vamb | binning                           | written     |
 | checkm       | bin/MAG quality                   | written     |
