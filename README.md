@@ -21,7 +21,7 @@ Note- this is a prioritized list of features to add to Amethyst. This is subject
 | multiqc      | read QC                           | complete    |
 | multitrim    | read trimming                     | complete    |
 | megahit      | assembly                          | complete    |
-| bbnorm       | normalization                     | complete    |
+| bbnorm       | normalization                     | ON HOLD     |
 | bowtie2      | assembly coverage analysis        | tested      |
 | prodigal     | gene prediction                   | tested      |
 | prokka       | gene annotation                   | tested      |
@@ -34,6 +34,8 @@ Note- this is a prioritized list of features to add to Amethyst. This is subject
 | sourmash     | diversity analysis- read based    | backlog     |
 | humann       | functional analysis               | backlog     |
 
+
+*BBnorm is on hold as normalization is not ideal for binning, and it was having errors.
 
 
 
