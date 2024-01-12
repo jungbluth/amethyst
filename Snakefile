@@ -22,15 +22,24 @@ rule all:
         "00_data/fastq/fastqc-R2/multiqc_report.html",
         expand("01_qc/trimmed_reads/test/{sample}_1.fq.gz", sample=SAMPLES),
         expand("01_qc/trimmed_reads/test/{sample}_2.fq.gz", sample=SAMPLES),
-        expand("01_qc/{sample}_normalized.fq.gz", sample=SAMPLES),
+        #expand("01_qc/{sample}_normalized.fq.gz", sample=SAMPLES),
         expand("02_assembly/{sample}/{sample}.contigs.fa", sample=SAMPLES),
         expand("02_assembly/{sample}.1.bt2", sample=SAMPLES),
         expand("02_assembly/{sample}/{sample}.sam", sample=SAMPLES),
         expand("02_assembly/{sample}/prodigal/{sample}_contig_cords.gbk", sample=SAMPLES),
         expand("02_assembly/{sample}/prodigal/{sample}_contig_orfs.faa", sample=SAMPLES),
         expand("02_assembly/{sample}/prodigal/{sample}_contig_orfs.fna", sample=SAMPLES),
-        expand("02_assembly/{sample}/prodigal/{sample}.gff", sample=SAMPLES),
-        expand("02_assembly/{sample}/prodigal/{sample}.faa", sample=SAMPLES)
+        expand("02_assembly/{sample}/prodigal/{sample}/{sample}.gff", sample=SAMPLES),
+        expand("02_assembly/{sample}/prodigal/{sample}/{sample}.faa", sample=SAMPLES),
+        expand("01_qc/trimmed_reads/test/{sample}_1.fq.gz", sample=SAMPLES),
+        expand("01_qc/trimmed_reads/test/{sample}_2.fq.gz", sample=SAMPLES),
+        expand("01_qc/sourmash/{sample}_test.fq", sample=SAMPLES)
+       # expand("01_qc/interleaved/{sample}_interleaved.fq.gz", sample=SAMPLES),
+        #expand("{sample}_reads.sig", sample=SAMPLES),
+        #expand("{sample}_sourmash_gather_out.csv", sample=SAMPLES),
+        #expand("{sample}_sourmash_tax", sample=SAMPLES) 
+
+
 
 # Run all the samples through FastQC 
 rule fastqc: 
@@ -43,6 +52,7 @@ rule fastqc:
     output:
         o1 = "00_data/fastq/fastqc-R1/R1_{sample}_R1_fastqc.html", 
         o2 = "00_data/fastq/fastqc-R2/R2_{sample}_R2_fastqc.html"
+    priority: 13
     params:
         outfolder1 = "00_data/fastq/fastqc-R1",
         outfolder2 = "00_data/fastq/fastqc-R2"
@@ -65,6 +75,7 @@ rule multiqc:
     output:
         "00_data/fastq/fastqc-R1/multiqc_report.html",
         "00_data/fastq/fastqc-R2/multiqc_report.html"
+    priority: 12
     params:
         outfolder1 = "00_data/fastq/fastqc-R1",
         outfolder2 = "00_data/fastq/fastqc-R2"
@@ -75,10 +86,10 @@ rule multiqc:
     shell:
         """
         cd 00_data/fastq/fastqc-R1
-        multiqc --export . 
+        multiqc --export . -f
         cd ..
         cd fastqc-R2
-        multiqc --export . 
+        multiqc --export . -f
         """
 
 # Run fastp
@@ -93,6 +104,7 @@ rule fastp:
         o1 = "01_qc/trimmed_reads/test/{sample}_1.fq.gz",
         o2 = "01_qc/trimmed_reads/test/{sample}_2.fq.gz",
         o3 = "01_qc/trimmed_reads/test/{sample}_test_report.html"
+    priority: 11
     log:
         "logs/fastp/{sample}.log"
     benchmark:
@@ -110,26 +122,27 @@ rule fastp:
         -h {output.o3}
         """
 # Run bbnorm
-rule bbnorm:
-    priority: 1
-    conda:
-        "mg-norm"
-    input:
-        r1 = "01_qc/trimmed_reads/test/{sample}_1.fq.gz",
-        r2 = "01_qc/trimmed_reads/test/{sample}_2.fq.gz" 
-    output:
-        o1 = "01_qc/{sample}_normalized.fq.gz"
-    params:
-        r1 = "01_qc/trimmed_reads/test/{sample}_1.fq.gz",
-        r2 = "01_qc/trimmed_reads/test/{sample}_2.fq.gz"
-    log:
-        "logs/bbnorm/{sample}.log"
-    benchmark:
-        "benchmarks/bbnorm/{sample}.txt"
-    shell:
-        """
-         /work/hpc/users/rstoro/git/amethyst/bbmap/bbnorm.sh in={input.r1} in2={input.r2} out={output.o1} target=100 min=5 interleaved=FALSE 
-        """
+#rule bbnorm:
+ #   priority: 1
+#    conda:
+#        "mg-norm"
+#    input:
+#        r1 = "01_qc/trimmed_reads/test/{sample}_1.fq.gz",
+#        r2 = "01_qc/trimmed_reads/test/{sample}_2.fq.gz" 
+#    output:
+#        o1 = "01_qc/{sample}_normalized.fq.gz"
+#    priority: 10
+#    params:
+#        r1 = "01_qc/trimmed_reads/test/{sample}_1.fq.gz",
+#        r2 = "01_qc/trimmed_reads/test/{sample}_2.fq.gz"
+#    log:
+#        "logs/bbnorm/{sample}.log"
+#    benchmark:
+#        "benchmarks/bbnorm/{sample}.txt"
+#    shell:
+#        """
+#         bbmap/bbnorm.sh in={input.r1} in2={input.r2} out={output.o1} target=100 min=5 interleaved=FALSE -Xmx50g
+#        """
 # Run megahit
 # snakemake will create the output folders since that is the location of the 
 # output files we specify. megahit refuses to run if its output folder already
@@ -147,6 +160,7 @@ rule megahit:
         r2 = "01_qc/trimmed_reads/test/{sample}_2.fq.gz"
     output:
         o1 = "02_assembly/{sample}/{sample}.contigs.fa"
+    priority: 9
     params:
         r1 = "02_assembly/{sample}_R1.fq",
         r2 = "02_assembly/{sample}_R2.fq",
@@ -181,16 +195,17 @@ rule bbdb:
         o4 = "02_assembly/{sample}.4.bt2",
         o5 = "02_assembly/{sample}.rev.1.bt2",
         o6 = "02_assembly/{sample}.rev.2.bt2"
+    priority: 8
     params:
         basename="02_assembly/{sample}"
-    threads: 32
+    threads: 20
     log:
         "logs/bbmap/{sample}.log"
     benchmark:
         "benchmarks/bbmap/{sample}.txt"
     shell:
         """
-        bowtie2-build --threads 32 {input.seq} {params.basename}
+        bowtie2-build --threads 20 {input.seq} {params.basename}
         """
 #map and make sam file
 rule bbmap:
@@ -208,6 +223,7 @@ rule bbmap:
     output:
         o1 = "02_assembly/{sample}/{sample}.sam",
         log = "02_assembly/{sample}.bowtie2.log"
+    priority: 7
     params:
         o2 = "02_assembly/{sample}"
     threads: 32
@@ -229,6 +245,7 @@ rule prodigal:
         o1 = "02_assembly/{sample}/prodigal/{sample}_contig_cords.gbk",
         o2 = "02_assembly/{sample}/prodigal/{sample}_contig_orfs.faa",
         o3 = "02_assembly/{sample}/prodigal/{sample}_contig_orfs.fna"
+    priority: 6
     threads: 32
     log:
         "logs/prodigal/{sample}.log"
@@ -244,10 +261,11 @@ rule prokka:
     input:
         r1 = "02_assembly/{sample}/{sample}.contigs.fa"
     output:
-        o1 = "02_assembly/{sample}/prodigal/{sample}.gff",
-        o2 = "02_assembly/{sample}/prodigal/{sample}.faa"
+        o1 = "02_assembly/{sample}/prodigal/{sample}/{sample}.gff",
+        o2 = "02_assembly/{sample}/prodigal/{sample}/{sample}.faa"
+    priority: 5
     params:
-        outfolder = "02_assembly/{sample}/prodigal",
+        outfolder = "02_assembly/{sample}/prodigal/{sample}",
         prefix = "{sample}" 
     threads: 32
     log:
@@ -256,11 +274,8 @@ rule prokka:
         "benchmarks/prokka/{sample}.txt"
     shell:
         """
-        prokka {input.r1} --outdir {params.outfolder} --prefix {params.prefix}
+        prokka {input.r1} --outdir {params.outfolder} --prefix {params.prefix} --force
         """
-
-#####FROM THIS POINT ON IS PSEUDO CODE AND WILL NOT RUN CORRECTLY
-#1/5/2024
 
 rule sourmash:
     conda:
@@ -268,105 +283,28 @@ rule sourmash:
     input:
         r1 = "01_qc/trimmed_reads/test/{sample}_1.fq.gz",
         r2 = "01_qc/trimmed_reads/test/{sample}_2.fq.gz",
-        r3 = "01_qc/interleaved/{sample}_interleaved.fq.gz" 
     output:
         o1 = "01_qc/interleaved/{sample}_interleaved.fq.gz",
-        o2 = "{params.sample}_reads.sig",
-        o3 = "{params.sample}_sourmash_gather_out.csv",
-        o4 = "{params.sample}_sourmash_tax"
+        o2 = "{sample}_reads.sig",
+        o3 = "{sample}_sourmash_gather_out.csv",
+        o4 = "{sample}_sourmash_tax",
+        r4 = "01_qc/sourmash/{sample}_test.fq" 
+
+    priority: 4
     params:
-        sample = SAMPLES,
         outfolder = "02_assembly/sourmash",
         outfolder2 = "02_assembly/sourmash/tax_out",
-        db = "/phodnet/OCED/databases/sourmash/GTDB_k31.sbt"
-    threads: 32
+        db = "dbs/sourmash/gtdb-rs214-reps-k31.zip"
+    threads: 20
     log:
-        "logs/sourmash/{params.sample}.log"
+        "logs/sourmash/{sample}.log"
     benchmark:
-        "benchmarks/sourmash/{params.sample}.txt"
+        "benchmarks/sourmash/{sample}.txt"
     shell:
         """
-        /work/hpc/users/rstoro/git/amethyst/bbmap/bbnorm.sh in={input.r1} in2={input.r2} out={output.o1} 
-        sourmash sketch dna {input.r3} -o {params.outfolder}/{output.o2}
-        sourmash gather {output.o2} {db} -o {params.outfolder}/{output.o3}
-        sourmash tax metagenome -g {output.o3} -t gtdb-rs202.taxonomy.v2.with-strain.csv -o {output.o4} --output-dir {params.outfolder2} --output-format krona --rank species
-        sourmash tax metagenome -g {output.o3} -t gtdb-rs202.taxonomy.v2.with-strain.csv -o {output.o4} --output-dir {params.outfolder2} --output-format csv_summary
-        """
-rule maxbin2:
-    conda:
-        "mg-binning"
-    input:
-        r1 = "02_assembly/{params.sample}/{params.sample}.contigs.fa",
-        r2 = "01_qc/trimmed_reads/test/{sample}_1.fq.gz",
-        r3 = "01_qc/trimmed_reads/test/{sample}_2.fq.gz"
-    output:
-        o1 = "02_assembly/{params.sample}_MaxBin"
-    params:
-        sample = SAMPLES
-    threads: 32
-    log:
-        "logs/maxbin/{params.sample}.log"
-    benchmark:
-        "benchmarks/maxbin/{params.sample}.txt"
-    shell:
-        """
-        run_MaxBin.pl -contig {input.r1} -min_contig_length 1000 \
-        -reads {input.r2} -reads2 {input.r3} \
-        -out {output.o1} -thread 32
-        """
-rule checkm:
-    conda:
-        "mg-checkm"
-    input:
-        r1 = "02_assembly/{params.sample}_MaxBin",
-        r2 = "02_assembly/{params.sample}_temp_folder"
-    output:
-        o1 = "02_assembly/{params.sample}_checkm"
-    params:
-        sample = SAMPLES
-    threads: 32
-    log:
-        "logs/checkm/{params.sample}.log"
-    benchmark:
-        "benchmarks/checkm/{params.sample}.txt"
-    shell:
-        """
-        checkm lineage_wf -t 32 -x fa --tmp {input.r2} {input.r1} {output.o1} >output.log
-        """
-rule dRep:
-    conda:
-        "mg-binning"
-    input:
-        r1 = "02_assembly/{params.sample}_checkm",
-        r2 = "dRep_MAGs_map.csv"
-    output:
-        o1 = "02_assembly/dRep_out"
-    params:
-        sample = SAMPLES
-    threads: 32
-    log:
-        "logs/dRep/{params.sample}.log"
-    benchmark:
-        "benchmarks/dRep/{params.sample}.txt"
-    shell:
-        """
-        dRep dereplicate {output.o1} -g {input.r1} --genomeInfo {input.r2} -sa 0.95 -nc 0.2 --ignoreGenomeQuality
-        """
-rule GTDBtk:
-    conda:
-        "mg-binning"
-    input:
-        r1 = "02_assembly/dRep_out"
-    output:
-        o1 = "03_assignment/GTDBtk"
-    params:
-        sample = SAMPLES
-    threads: 32
-    log:
-        "logs/GTDBtk/{params.sample}.log"
-    benchmark:
-        "benchmarks/GTDBtk/{params.sample}.txt"
-    shell:
-        """
-        gtdbtk classify_wf --genome_dir {input.r1} --out_dir {output.o1}
+       bbmap/reformat.sh in1={input.r1} in2={input.r2} out={output.o1}
+       sourmash sketch dna {output.o1} -o {params.outfolder}/{output.o2}
+       sourmash gather {output.o2} {params.db} -o {params.outfolder}/{output.o3}
+       sourmash tax metagenome -g {output.o3} -t gtdb-rs202.taxonomy.v2.with-strain.csv -o {output.o4} --output-dir {params.outfolder2} --output-format krona --rank species
+       sourmash tax metagenome -g {output.o3} -t gtdb-rs202.taxonomy.v2.with-strain.csv -o {output.o4} --output-dir {params.outfolder2} --output-format csv_summary
         """
