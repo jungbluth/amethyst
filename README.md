@@ -25,9 +25,9 @@ Note- this is a prioritized list of features to add to Amethyst. This is subject
 | bowtie2      | assembly coverage analysis        | tested      |
 | prodigal     | gene prediction                   | tested      |
 | prokka       | gene annotation                   | tested      |
-| sourmash     | diversity analysis- assembly based| written     |
-| maxbin2/vamb | binning                           | written     |
-| checkm       | bin/MAG quality                   | written     |
+| sourmash     | diversity analysis- assembly based| tested      |
+| maxbin2/vamb | binning                           | tested      |
+| checkm       | bin/MAG quality                   | tested      |
 | dRep         | dereplication of bins/MAGs        | written     |
 | GTDB-Tk      | taxonomic assignment of bins/MAGs | written     |
 | nonpareil    | read-based coverage analysis      | backlog     |
