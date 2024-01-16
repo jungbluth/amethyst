@@ -26,7 +26,7 @@ Note- this is a prioritized list of features to add to Amethyst. This is subject
 | prodigal     | gene prediction                   | tested      |
 | prokka       | gene annotation                   | tested      |
 | sourmash     | diversity analysis- assembly based| tested      |
-| maxbin2/vamb | binning                           | tested      |
+| maxbin2      | binning                           | tested      |
 | checkm       | bin/MAG quality                   | tested      |
 | dRep         | dereplication of bins/MAGs        | written     |
 | GTDB-Tk      | taxonomic assignment of bins/MAGs | written     |
