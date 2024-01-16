@@ -20,9 +20,8 @@ rule all:
         expand("00_data/fastq/fastqc-R2/R2_{sample}_R2_fastqc.html", sample=SAMPLES),
         "00_data/fastq/fastqc-R1/multiqc_report.html",
         "00_data/fastq/fastqc-R2/multiqc_report.html",
-        expand("01_qc/trimmed_reads/test/{sample}_1.fq.gz", sample=SAMPLES),
-        expand("01_qc/trimmed_reads/test/{sample}_2.fq.gz", sample=SAMPLES),
-        #expand("01_qc/{sample}_normalized.fq.gz", sample=SAMPLES),
+        expand("01_qc/trimmed_reads/test/{sample}_1.fq", sample=SAMPLES),
+        expand("01_qc/trimmed_reads/test/{sample}_2.fq", sample=SAMPLES),
         expand("02_assembly/{sample}/{sample}.contigs.fa", sample=SAMPLES),
         expand("02_assembly/{sample}.1.bt2", sample=SAMPLES),
         expand("02_assembly/{sample}/{sample}.sam", sample=SAMPLES),
@@ -31,19 +30,16 @@ rule all:
         expand("02_assembly/{sample}/prodigal/{sample}_contig_orfs.fna", sample=SAMPLES),
         expand("02_assembly/{sample}/prodigal/{sample}/{sample}.gff", sample=SAMPLES),
         expand("02_assembly/{sample}/prodigal/{sample}/{sample}.faa", sample=SAMPLES),
-        expand("01_qc/trimmed_reads/test/{sample}_1.fq.gz", sample=SAMPLES),
-        expand("01_qc/trimmed_reads/test/{sample}_2.fq.gz", sample=SAMPLES),
-        expand("01_qc/sourmash/{sample}_test.fq", sample=SAMPLES)
-       # expand("01_qc/interleaved/{sample}_interleaved.fq.gz", sample=SAMPLES),
-        #expand("{sample}_reads.sig", sample=SAMPLES),
-        #expand("{sample}_sourmash_gather_out.csv", sample=SAMPLES),
-        #expand("{sample}_sourmash_tax", sample=SAMPLES) 
-
-
+        expand("01_qc/trimmed_reads/test/{sample}_1.fq", sample=SAMPLES),
+        expand("01_qc/trimmed_reads/test/{sample}_2.fq", sample=SAMPLES),
+        expand("02_assembly/{sample}_sourmash_gather_out.csv", sample=SAMPLES),
+        expand("02_assembly/{sample}_MaxBin.abund2", sample=SAMPLES),
+        expand("02_assembly/{sample}_MaxBin.001.fasta", sample=SAMPLES),
+        expand("02_assembly/checkm/results/bins/{sample}_MaxBin.001/hmmer.tree.txt", sample=SAMPLES),
+        expand("02_assembly/checkm/results/bins/{sample}_MaxBin.002/hmmer.tree.txt", sample=SAMPLES)
 
 # Run all the samples through FastQC 
 rule fastqc: 
-    priority: 1
     conda: 
         "mg-qc"
     input:
@@ -69,7 +65,6 @@ rule fastqc:
 
 # Run MultiQC on the FastQC reports
 rule multiqc:
-    priority: 1
     conda:
         "mg-qc"
     output:
@@ -94,15 +89,14 @@ rule multiqc:
 
 # Run fastp
 rule fastp:
-    priority: 1
     conda: 
         "multitrim"
     input:
         r1 = "00_data/fastq/R1/R1_{sample}_R1.fastq",
         r2 = "00_data/fastq/R2/R2_{sample}_R2.fastq"
     output:
-        o1 = "01_qc/trimmed_reads/test/{sample}_1.fq.gz",
-        o2 = "01_qc/trimmed_reads/test/{sample}_2.fq.gz",
+        o1 = "01_qc/trimmed_reads/test/{sample}_1.fq",
+        o2 = "01_qc/trimmed_reads/test/{sample}_2.fq",
         o3 = "01_qc/trimmed_reads/test/{sample}_test_report.html"
     priority: 11
     log:
@@ -123,7 +117,6 @@ rule fastp:
         """
 # Run bbnorm
 #rule bbnorm:
- #   priority: 1
 #    conda:
 #        "mg-norm"
 #    input:
@@ -152,7 +145,6 @@ rule fastp:
 # memory. This will probably need to be adjusted when used under other
 # situations.
 rule megahit:
-    priority: 1
     conda:
         "mg-assembly"
     input:
@@ -183,7 +175,6 @@ rule megahit:
         """
 #build db
 rule bbdb:
-    priority: 2
     conda:
         "mg-binning"
     input:
@@ -276,8 +267,7 @@ rule prokka:
         """
         prokka {input.r1} --outdir {params.outfolder} --prefix {params.prefix} --force
         """
-
-rule sourmash:
+rule interleave:
     conda:
         "mg-diversity"
     input:
@@ -285,16 +275,30 @@ rule sourmash:
         r2 = "01_qc/trimmed_reads/test/{sample}_2.fq.gz",
     output:
         o1 = "01_qc/interleaved/{sample}_interleaved.fq.gz",
-        o2 = "{sample}_reads.sig",
-        o3 = "{sample}_sourmash_gather_out.csv",
-        o4 = "{sample}_sourmash_tax",
-        r4 = "01_qc/sourmash/{sample}_test.fq" 
-
     priority: 4
     params:
-        outfolder = "02_assembly/sourmash",
-        outfolder2 = "02_assembly/sourmash/tax_out",
-        db = "dbs/sourmash/gtdb-rs214-reps-k31.zip"
+    threads: 20
+    log:
+        "logs/bbint/{sample}.log"
+    benchmark:
+        "benchmarks/bbint/{sample}.txt"
+    shell:
+        """
+       ./bbmap/reformat.sh in1={input.r1} in2={input.r2} out={output.o1} 
+        """
+rule sourmash:
+    conda:
+        "mg-diversity"
+    input:
+       o1 = "01_qc/interleaved/{sample}_interleaved.fq"
+    output:
+       o2 = "02_assembly/{sample}_reads.sig",
+       o3 = "02_assembly/{sample}_sourmash_gather_out.csv",
+       # o4 = "02_assembly/{sample}_sourmash_tax"
+    priority: 3
+    params:
+        outfolder2 = "02_assembly/sourmash/tax_out/{sample}",
+        db = "./dbs/gtdb-rs202.genomic-reps.k31.zip"
     threads: 20
     log:
         "logs/sourmash/{sample}.log"
@@ -302,9 +306,34 @@ rule sourmash:
         "benchmarks/sourmash/{sample}.txt"
     shell:
         """
-       bbmap/reformat.sh in1={input.r1} in2={input.r2} out={output.o1}
-       sourmash sketch dna {output.o1} -o {params.outfolder}/{output.o2}
-       sourmash gather {output.o2} {params.db} -o {params.outfolder}/{output.o3}
-       sourmash tax metagenome -g {output.o3} -t gtdb-rs202.taxonomy.v2.with-strain.csv -o {output.o4} --output-dir {params.outfolder2} --output-format krona --rank species
-       sourmash tax metagenome -g {output.o3} -t gtdb-rs202.taxonomy.v2.with-strain.csv -o {output.o4} --output-dir {params.outfolder2} --output-format csv_summary
+       #gunzip 01_qc/interleaved/*.gz
+       sourmash sketch dna {input.o1} -o {output.o2} 
+       sourmash gather {output.o2} {params.db} -o {output.o3} --ignore-abundance 
+       sourmash tax metagenome -g {output.o3} -t ./dbs/gtdb-rs202.taxonomy.v2.csv -o {params.outfolder2} --output-format csv_summary --force
+       sourmash tax metagenome -g {output.o3} -t ./dbs/gtdb-rs202.taxonomy.v2.csv -o {params.outfolder2} --output-format krona --rank family --force
         """
+rule maxbin2:
+    conda:
+        "mg-binning2"
+    input:
+        r1 = "02_assembly/{sample}/{sample}.contigs.fa",
+        r2 = "01_qc/trimmed_reads/test/{sample}_1.fq",
+        r3 = "01_qc/trimmed_reads/test/{sample}_2.fq"
+    output:
+        o1 = "02_assembly/{sample}_MaxBin.001.fasta",
+        o2 = "02_assembly/{sample}_MaxBin.abund2"
+    priority: 3
+    params:
+       outfolder = "02_assembly/{sample}_MaxBin"
+    threads: 20
+    log:
+        "logs/maxbin/{sample}.log"
+    benchmark:
+        "benchmarks/maxbin/{sample}.txt"
+    shell:
+        """
+        run_MaxBin.pl -contig {input.r1} -min_contig_length 100 \
+        -reads {input.r2} -reads2 {input.r3} \
+        -out {params.outfolder} -thread 20
+        """
+
