@@ -12,6 +12,17 @@ for file in files:
     if match:
         SAMPLES.append(match.group(1))
 
+
+#digpattern = re.compile(r'02_assembly/{sample}_MaxBin.(.*).fasta')
+#digfiles = glob.glob('02_assembly/{sample}_MaxBin.*.fasta')
+
+#DIGIT = []
+#for file in digfiles:
+#    match = digpattern.match(file)
+#    if match:
+#        SAMPLES.append(match.group(1))
+#DIGIT = r'^[0-9]*$'
+DIGIT = '[0-9][0-9][0-9]'
 # Master rule that snakemake uses to determine which files need to be 
 # generated.
 rule all:
@@ -34,10 +45,9 @@ rule all:
         expand("01_qc/trimmed_reads/test/{sample}_2.fq", sample=SAMPLES),
         expand("02_assembly/{sample}_sourmash_gather_out.csv", sample=SAMPLES),
         expand("02_assembly/{sample}_MaxBin.abund2", sample=SAMPLES),
-        expand("02_assembly/{sample}_MaxBin.001.fasta", sample=SAMPLES),
-        expand("02_assembly/checkm/results/bins/{sample}_MaxBin.001/hmmer.tree.txt", sample=SAMPLES),
-        expand("02_assembly/checkm/results/bins/{sample}_MaxBin.002/hmmer.tree.txt", sample=SAMPLES)
-
+        expand("02_assembly/{sample}/{sample}.contigs.fa", sample=SAMPLES),
+        expand("02_assembly/checkm/results/bins/genes.gff", sample=SAMPLES),
+        expand("02_assembly/{sample}_MaxBin.{digit}{digit}{digit}.fasta", sample=SAMPLES, digit=DIGIT)   
 # Run all the samples through FastQC 
 rule fastqc: 
     conda: 
@@ -322,7 +332,7 @@ rule maxbin2:
     output:
         o1 = "02_assembly/{sample}_MaxBin.001.fasta",
         o2 = "02_assembly/{sample}_MaxBin.abund2"
-    priority: 3
+    priority: 4
     params:
        outfolder = "02_assembly/{sample}_MaxBin"
     threads: 20
@@ -336,4 +346,64 @@ rule maxbin2:
         -reads {input.r2} -reads2 {input.r3} \
         -out {params.outfolder} -thread 20
         """
+
+rule checkm:
+    conda:
+        "checkm"
+    input:
+        r1 = "00_data/fastq/fastqc-R1/multiqc_report.html"
+    output:
+        o2 = "02_assembly/checkm/results/bins/genes.gff"    
+    priority: 3
+    params:
+        outfolder = "02_assembly/checkm",
+        outfolder2 = "02_assembly/checkm/results"
+    log:
+        "logs/checkm/checkm.log"
+    benchmark:
+        "benchmarks/checkm/checkm.txt"
+    shell:
+        """
+        export CHECKM_DATA_PATH=dbs/
+        test -f {output.o2} && 2>&1 || checkm lineage_wf -x fa {params.outfolder} {params.outfolder2} >output.log
+        """
+rule dRep:
+    conda:
+       "mg-binning3"
+    input:
+       r1 = "02_assembly/{sample}_MaxBin.{digit}{digit}{digit}.fasta"
+    output:
+       r2 = "02_assembly/{sample}.log2"
+       #o1 = "02_assembly/dRep_out/Primary_clustering_dendrogram.pdf"
+    priority: 2
+    params:
+       outfile = "02_assembly/checkm/{sample}_MaxBin.{digit}{digit}{digit}.fasta"
+    threads: 20
+    log:
+       "logs/dRep/{sample}.log"
+    benchmark:
+       "benchmarks/dRep/{sample}.txt"
+    shell:
+       """
+       dRep dereplicate 02_assembly/dRep_out -g {input.o1} -sa 0.95 -nc 0.2 --ignoreGenomeQuality
+       """
+
+
+rule GTDBtk:
+    conda:
+       "mg-binning2"
+    input:
+       r1 = "02_assembly/dRep_out"
+    output:
+       o1 = "03_assignment/GTDBtk"
+    threads: 20
+    log:
+       "logs/GTDBtk/{sample}.log"
+    benchmark:
+       "benchmarks/GTDBtk/{sample}.txt"
+    shell:
+       """
+       gtdbtk classify_wf --genome_dir {input.r1} --out_dir {output.o1}
+       """
+
 
