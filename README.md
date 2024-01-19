@@ -39,14 +39,10 @@ Note- this is a prioritized list of features to add to Amethyst. This is subject
 
 
 Features to add in new versions: 
-- config file to globally update variables
 - co-assembly capabilities
 - overarching rules to combine pseudo rules
-- benchmarking
+- benchmarking/logs- coded in the current version but not writing
 - init file to make all conda environments needed to run amethyst
 - yaml files for conda environments needed to run amethyst
-- fix issue where adapt_trim is overwriting temp files for each sample
 - choice of assembler
-- read-based analyses and gene annotation
-- Binning for MAGS
 - Docker Containers 
