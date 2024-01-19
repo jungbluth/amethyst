@@ -11,18 +11,7 @@ for file in files:
     match = pattern.match(file)
     if match:
         SAMPLES.append(match.group(1))
-
-
-#digpattern = re.compile(r'02_assembly/{sample}_MaxBin.(.*).fasta')
-#digfiles = glob.glob('02_assembly/{sample}_MaxBin.*.fasta')
-
-#DIGIT = []
-#for file in digfiles:
-#    match = digpattern.match(file)
-#    if match:
-#        SAMPLES.append(match.group(1))
-#DIGIT = r'^[0-9]*$'
-DIGIT = '[0-9][0-9][0-9]'
+ruleorder: fastqc > multiqc > fastp > megahit > bbdb > bbmap > prodigal > prokka > interleave > sourmash > maxbin2 > checkm > dRep  
 # Master rule that snakemake uses to determine which files need to be 
 # generated.
 rule all:
@@ -43,11 +32,11 @@ rule all:
         expand("02_assembly/{sample}/prodigal/{sample}/{sample}.faa", sample=SAMPLES),
         expand("01_qc/trimmed_reads/test/{sample}_1.fq", sample=SAMPLES),
         expand("01_qc/trimmed_reads/test/{sample}_2.fq", sample=SAMPLES),
-        expand("02_assembly/{sample}_sourmash_gather_out.csv", sample=SAMPLES),
+        expand("02_assembly/sourmash/tax_out/{sample}_sourmash_gather_out.csv", sample=SAMPLES),
         expand("02_assembly/{sample}_MaxBin.abund2", sample=SAMPLES),
         expand("02_assembly/{sample}/{sample}.contigs.fa", sample=SAMPLES),
         expand("02_assembly/checkm/results/bins/genes.gff", sample=SAMPLES),
-        expand("02_assembly/{sample}_MaxBin.{digit}{digit}{digit}.fasta", sample=SAMPLES, digit=DIGIT)   
+        "02_assembly/dRep_out/Primary_clustering_dendrogram.pdf"
 # Run all the samples through FastQC 
 rule fastqc: 
     conda: 
@@ -91,6 +80,7 @@ rule multiqc:
     shell:
         """
         cd 00_data/fastq/fastqc-R1
+
         multiqc --export . -f
         cd ..
         cd fastqc-R2
@@ -158,8 +148,8 @@ rule megahit:
     conda:
         "mg-assembly"
     input:
-        r1 = "01_qc/trimmed_reads/test/{sample}_1.fq.gz",
-        r2 = "01_qc/trimmed_reads/test/{sample}_2.fq.gz"
+        r1 = "01_qc/trimmed_reads/test/{sample}_1.fq",
+        r2 = "01_qc/trimmed_reads/test/{sample}_2.fq"
     output:
         o1 = "02_assembly/{sample}/{sample}.contigs.fa"
     priority: 9
@@ -176,8 +166,8 @@ rule megahit:
     shell:
         """
         rm -rf {params.outfolder}
-        zcat {input.r1} > {params.r1}
-        zcat {input.r2} > {params.r2}
+        cat {input.r1} > {params.r1}
+        cat {input.r2} > {params.r2}
         megahit -1 {params.r1} -2 {params.r2} -m 0.85 -t {threads} \
             --min-contig-len 20 --out-prefix {params.prefix} \
             -o {params.outfolder}
@@ -213,8 +203,8 @@ rule bbmap:
     conda:
         "mg-binning"
     input:
-        r1 = "01_qc/trimmed_reads/test/{sample}_1.fq.gz",
-        r2 = "01_qc/trimmed_reads/test/{sample}_2.fq.gz",
+        r1 = "01_qc/trimmed_reads/test/{sample}_1.fq",
+        r2 = "01_qc/trimmed_reads/test/{sample}_2.fq",
         o1 = "02_assembly/{sample}.1.bt2",
         o2 = "02_assembly/{sample}.2.bt2",
         o3 = "02_assembly/{sample}.3.bt2",
@@ -281,10 +271,10 @@ rule interleave:
     conda:
         "mg-diversity"
     input:
-        r1 = "01_qc/trimmed_reads/test/{sample}_1.fq.gz",
-        r2 = "01_qc/trimmed_reads/test/{sample}_2.fq.gz",
+        r1 = "01_qc/trimmed_reads/test/{sample}_1.fq",
+        r2 = "01_qc/trimmed_reads/test/{sample}_2.fq",
     output:
-        o1 = "01_qc/interleaved/{sample}_interleaved.fq.gz",
+        o1 = "01_qc/interleaved/{sample}_interleaved.fq",
     priority: 4
     params:
     threads: 20
@@ -302,9 +292,8 @@ rule sourmash:
     input:
        o1 = "01_qc/interleaved/{sample}_interleaved.fq"
     output:
-       o2 = "02_assembly/{sample}_reads.sig",
-       o3 = "02_assembly/{sample}_sourmash_gather_out.csv",
-       # o4 = "02_assembly/{sample}_sourmash_tax"
+       o2 = "02_assembly/sourmash/tax_out/{sample}_reads.sig",
+       o3 = "02_assembly/sourmash/tax_out/{sample}_sourmash_gather_out.csv",
     priority: 3
     params:
         outfolder2 = "02_assembly/sourmash/tax_out/{sample}",
@@ -316,7 +305,6 @@ rule sourmash:
         "benchmarks/sourmash/{sample}.txt"
     shell:
         """
-       #gunzip 01_qc/interleaved/*.gz
        sourmash sketch dna {input.o1} -o {output.o2} 
        sourmash gather {output.o2} {params.db} -o {output.o3} --ignore-abundance 
        sourmash tax metagenome -g {output.o3} -t ./dbs/gtdb-rs202.taxonomy.v2.csv -o {params.outfolder2} --output-format csv_summary --force
@@ -354,7 +342,6 @@ rule checkm:
         r1 = "00_data/fastq/fastqc-R1/multiqc_report.html"
     output:
         o2 = "02_assembly/checkm/results/bins/genes.gff"    
-    priority: 3
     params:
         outfolder = "02_assembly/checkm",
         outfolder2 = "02_assembly/checkm/results"
@@ -365,37 +352,42 @@ rule checkm:
     shell:
         """
         export CHECKM_DATA_PATH=dbs/
+        cp 02_assembly/*/*.contigs.fa 02_assembly/checkm
         test -f {output.o2} && 2>&1 || checkm lineage_wf -x fa {params.outfolder} {params.outfolder2} >output.log
         """
 rule dRep:
     conda:
        "mg-binning3"
     input:
-       r1 = "02_assembly/{sample}_MaxBin.{digit}{digit}{digit}.fasta"
+       r1 = "00_data/fastq/fastqc-R2/multiqc_report.html"
     output:
-       r2 = "02_assembly/{sample}.log2"
-       #o1 = "02_assembly/dRep_out/Primary_clustering_dendrogram.pdf"
-    priority: 2
+       o1 = "02_assembly/dRep_out/Primary_clustering_dendrogram.pdf"
+    priority: 1
     params:
-       outfile = "02_assembly/checkm/{sample}_MaxBin.{digit}{digit}{digit}.fasta"
+       infolder = "02_assembly/dRep_samples",
+       outfolder = "02_assembly/dRep_out"
     threads: 20
     log:
-       "logs/dRep/{sample}.log"
+       "logs/dRep/dRep.log"
     benchmark:
-       "benchmarks/dRep/{sample}.txt"
+       "benchmarks/dRep/dRep.txt"
     shell:
        """
-       dRep dereplicate 02_assembly/dRep_out -g {input.o1} -sa 0.95 -nc 0.2 --ignoreGenomeQuality
+       mkdir {params.infolder}
+       mkdir {params.outfolder}
+       cp 02_assembly/*_MaxBin.*.fasta {params.infolder}
+       dRep dereplicate {params.outfolder} -g {params.infolder} -sa 0.95 -nc 0.2 --ignoreGenomeQuality
        """
-
-
 rule GTDBtk:
     conda:
        "mg-binning2"
     input:
-       r1 = "02_assembly/dRep_out"
+       r1 = "02_assembly/dRep_out/Primary_clustering_dendrogram.pdf"
     output:
-       o1 = "03_assignment/GTDBtk"
+       o2 = "02_assembly/dRep_out/{sample}.txt"
+    params: 
+       o1 = directory("03_assignment/GTDBtk"),
+       i1 = "02_assembly/dRep_samples"
     threads: 20
     log:
        "logs/GTDBtk/{sample}.log"
@@ -403,7 +395,7 @@ rule GTDBtk:
        "benchmarks/GTDBtk/{sample}.txt"
     shell:
        """
-       gtdbtk classify_wf --genome_dir {input.r1} --out_dir {output.o1}
+       gtdbtk classify_wf --genome_dir {params.i1} --out_dir {params.o1}
        """
 
 
