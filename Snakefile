@@ -36,7 +36,12 @@ rule all:
         expand("02_assembly/{sample}_MaxBin.abund2", sample=SAMPLES),
         expand("02_assembly/{sample}/{sample}.contigs.fa", sample=SAMPLES),
         expand("02_assembly/checkm/results/bins/genes.gff", sample=SAMPLES),
-        "02_assembly/dRep_out/Primary_clustering_dendrogram.pdf"
+        "02_assembly/dRep_out/Primary_clustering_dendrogram.pdf",
+        expand("02_assembly/dRep_samples/{sample}_MaxBin.001.fasta",sample=SAMPLES),
+        #expand("02_assembly/dRep_samples/{sample}_MaxBin.002.fasta",sample=SAMPLES),
+        expand("03_assignment/GTDBtk/{sample}_mashoutput.msh", sample=SAMPLES)
+
+
 # Run all the samples through FastQC 
 rule fastqc: 
     conda: 
@@ -351,51 +356,7 @@ rule checkm:
         "benchmarks/checkm/checkm.txt"
     shell:
         """
-        export CHECKM_DATA_PATH=dbs/
+        export CHECKM_DATA_PATH=¿dbs/
         cp 02_assembly/*/*.contigs.fa 02_assembly/checkm
         test -f {output.o2} && 2>&1 || checkm lineage_wf -x fa {params.outfolder} {params.outfolder2} >output.log
         """
-rule dRep:
-    conda:
-       "mg-binning3"
-    input:
-       r1 = "00_data/fastq/fastqc-R2/multiqc_report.html"
-    output:
-       o1 = "02_assembly/dRep_out/Primary_clustering_dendrogram.pdf"
-    priority: 1
-    params:
-       infolder = "02_assembly/dRep_samples",
-       outfolder = "02_assembly/dRep_out"
-    threads: 20
-    log:
-       "logs/dRep/dRep.log"
-    benchmark:
-       "benchmarks/dRep/dRep.txt"
-    shell:
-       """
-       mkdir {params.infolder}
-       mkdir {params.outfolder}
-       cp 02_assembly/*_MaxBin.*.fasta {params.infolder}
-       dRep dereplicate {params.outfolder} -g {params.infolder} -sa 0.95 -nc 0.2 --ignoreGenomeQuality
-       """
-rule GTDBtk:
-    conda:
-       "mg-binning2"
-    input:
-       r1 = "02_assembly/dRep_out/Primary_clustering_dendrogram.pdf"
-    output:
-       o2 = "02_assembly/dRep_out/{sample}.txt"
-    params: 
-       o1 = directory("03_assignment/GTDBtk"),
-       i1 = "02_assembly/dRep_samples"
-    threads: 20
-    log:
-       "logs/GTDBtk/{sample}.log"
-    benchmark:
-       "benchmarks/GTDBtk/{sample}.txt"
-    shell:
-       """
-       gtdbtk classify_wf --genome_dir {params.i1} --out_dir {params.o1}
-       """
-
-
