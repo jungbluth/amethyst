@@ -7,7 +7,7 @@ v. 1.0
 - Amethyst requires python >3.6 
 - Amethyst requires data files to be located in amethyst/00_data/fastq, separated in R1 for forward reads, R2 for reverse.
 
-To get started, please see the [Quick Start Guide](https://github.com/rckarns8/amethyst/wiki/0.-Quick-Start-Guide)
+To get started, please see the [Quick Start Guide](https://github.com/rckarns8/amethyst/wiki/0.0-Quick-Start-Guide)
 
 
 # Roadmap:
