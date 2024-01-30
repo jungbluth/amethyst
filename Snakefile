@@ -36,11 +36,16 @@ rule all:
         expand("02_assembly/{sample}_MaxBin.abund2", sample=SAMPLES),
         expand("02_assembly/{sample}/{sample}.contigs.fa", sample=SAMPLES),
         expand("02_assembly/checkm/results/bins/genes.gff", sample=SAMPLES),
-        "02_assembly/dRep_out/Primary_clustering_dendrogram.pdf",
+        "02_assembly/dRep_out/log/logger.log",
         expand("02_assembly/dRep_samples/{sample}_MaxBin.001.fasta",sample=SAMPLES),
         #expand("02_assembly/dRep_samples/{sample}_MaxBin.002.fasta",sample=SAMPLES),
-        expand("03_assignment/GTDBtk/{sample}_mashoutput.msh", sample=SAMPLES)
+        expand("03_assignment/GTDBtk/mashoutput.msh", sample=SAMPLES),
+        expand("03_assignment/GTDBtk/gtdbtk.log", sample=SAMPLES)
 
+
+
+o2 = "03_assignment/GTDBtk/gtdbtk.log",
+       o3 = "03_assignment/GTDBtk/mashoutput.msh"
 
 # Run all the samples through FastQC 
 rule fastqc: 
@@ -360,3 +365,68 @@ rule checkm:
         cp 02_assembly/*/*.contigs.fa 02_assembly/checkm
         test -f {output.o2} && 2>&1 || checkm lineage_wf -x fa {params.outfolder} {params.outfolder2} >output.log
         """
+rule dRep:
+    conda:
+       "mg-binning3"
+    input:
+       r1 = "00_data/fastq/fastqc-R2/multiqc_report.html"
+    output:
+       o1 = "02_assembly/dRep_out/log/logger.log"
+    priority: 1
+    params:
+       infolder = "02_assembly/dRep_samples",
+       in2 = "02_assembly/dRep_samples/*.fasta",
+       outfolder = "02_assembly/dRep_out"
+    threads: 20
+    log:
+       "logs/dRep/dRep.log"
+    benchmark:
+       "benchmarks/dRep/dRep.txt"
+    shell:
+       """
+       # Check if the input folder exists and wipe it if it does
+       if [ -d "{params.infolder}" ]; then
+           rm -rf "{params.infolder}"
+       fi
+
+       # Check if the output folder exists and wipe it if it does
+       if [ -d "{params.outfolder}" ]; then
+           rm -rf "{params.outfolder}"
+       fi
+
+       # Create the input folder
+       mkdir -p "{params.infolder}"
+
+       # Create the output folder
+       mkdir -p "{params.outfolder}"
+
+       # Copy files to the input folder
+       cp 02_assembly/*.fasta "{params.infolder}"
+
+       # Check if the output file exists before running dRep dereplicate
+       test -f "{output.o1}" && 2>&1 || dRep dereplicate "{params.outfolder}" -g 02_assembly/dRep_samples/*.fasta --ignoreGenomeQuality --SkipSecondary
+       """
+rule GTDBtk:
+    conda:
+       "mg-binning3"
+    input:
+       r1 = "02_assembly/dRep_samples/{sample}_MaxBin.002.fasta"
+    output:
+       o2 = "03_assignment/GTDBtk/gtdbtk.log",
+       o3 = "03_assignment/GTDBtk/mashoutput.msh"
+    params: 
+       o1 = directory("03_assignment/GTDBtk"),
+       i1 = "02_assembly/dRep_samples/"
+    threads: 20
+    log:
+       "logs/GTDBtk/{sample}.log"
+    benchmark:
+       "benchmarks/GTDBtk/{sample}.txt"
+    shell:
+       """
+       mkdir -p 03_assignment/
+       mkdir -p 03_assignment/GTDBtk
+       gtdbtk classify_wf --mash_db 03_assignment/GTDBtk/mashoutput.msh --genome_dir {params.i1} --out_dir {params.o1} --extension fasta
+       """
+
+
