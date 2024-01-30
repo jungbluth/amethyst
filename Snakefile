@@ -295,10 +295,10 @@ rule sourmash:
     conda:
         "mg-diversity"
     input:
-       o1 = "01_qc/interleaved/{sample}_interleaved.fq"
+        o1 = "01_qc/interleaved/{sample}_interleaved.fq"
     output:
-       o2 = "02_assembly/sourmash/tax_out/{sample}_reads.sig",
-       o3 = "02_assembly/sourmash/tax_out/{sample}_sourmash_gather_out.csv",
+        o2 = "02_assembly/sourmash/tax_out/{sample}_reads.sig",
+        o3 = "02_assembly/sourmash/tax_out/{sample}_sourmash_gather_out.csv",
     priority: 3
     params:
         outfolder2 = "02_assembly/sourmash/tax_out/{sample}",
@@ -310,10 +310,10 @@ rule sourmash:
         "benchmarks/sourmash/{sample}.txt"
     shell:
         """
-       sourmash sketch dna {input.o1} -o {output.o2} 
-       sourmash gather {output.o2} {params.db} -o {output.o3} --ignore-abundance 
-       sourmash tax metagenome -g {output.o3} -t ./dbs/gtdb-rs202.taxonomy.v2.csv -o {params.outfolder2} --output-format csv_summary --force
-       sourmash tax metagenome -g {output.o3} -t ./dbs/gtdb-rs202.taxonomy.v2.csv -o {params.outfolder2} --output-format krona --rank family --force
+        sourmash sketch dna {input.o1} -o {output.o2} 
+        sourmash gather {output.o2} {params.db} -o {output.o3} --ignore-abundance 
+        sourmash tax metagenome -g {output.o3} -t ./dbs/gtdb-rs202.taxonomy.v2.csv -o {params.outfolder2} --output-format csv_summary --force
+        sourmash tax metagenome -g {output.o3} -t ./dbs/gtdb-rs202.taxonomy.v2.csv -o {params.outfolder2} --output-format krona --rank family --force
         """
 rule maxbin2:
     conda:
@@ -327,7 +327,7 @@ rule maxbin2:
         o2 = "02_assembly/{sample}_MaxBin.abund2"
     priority: 4
     params:
-       outfolder = "02_assembly/{sample}_MaxBin"
+        outfolder = "02_assembly/{sample}_MaxBin"
     threads: 20
     log:
         "logs/maxbin/{sample}.log"
@@ -356,67 +356,61 @@ rule checkm:
         "benchmarks/checkm/checkm.txt"
     shell:
         """
-        export CHECKM_DATA_PATH=¿dbs/
+        export CHECKM_DATA_PATH=./dbs/
         cp 02_assembly/*/*.contigs.fa 02_assembly/checkm
         test -f {output.o2} && 2>&1 || checkm lineage_wf -x fa {params.outfolder} {params.outfolder2} >output.log
         """
 rule dRep:
     conda:
-       "mg-binning3"
+        "mg-binning3"
     input:
-       r1 = "00_data/fastq/fastqc-R2/multiqc_report.html"
+        r1 = "00_data/fastq/fastqc-R2/multiqc_report.html"
     output:
-       o1 = "02_assembly/dRep_out/log/logger.log"
+        o1 = "02_assembly/dRep_out/log/logger.log"
     priority: 1
     params:
-       infolder = "02_assembly/dRep_samples",
-       in2 = "02_assembly/dRep_samples/*.fasta",
-       outfolder = "02_assembly/dRep_out"
+        infolder = "02_assembly/dRep_samples",
+        in2 = "02_assembly/dRep_samples/*.fasta",
+        outfolder = "02_assembly/dRep_out"
     threads: 20
     log:
-       "logs/dRep/dRep.log"
+        "logs/dRep/dRep.log"
     benchmark:
-       "benchmarks/dRep/dRep.txt"
+        "benchmarks/dRep/dRep.txt"
     shell:
-       """
-       # Check if the input folder exists and wipe it if it does
-       if [ -d "{params.infolder}" ]; then
-           rm -rf "{params.infolder}"
-       fi
-       # Check if the output folder exists and wipe it if it does
-       if [ -d "{params.outfolder}" ]; then
-           rm -rf "{params.outfolder}"
-       fi
-       # Create the input folder
-       mkdir -p "{params.infolder}"
-       # Create the output folder
-       mkdir -p "{params.outfolder}"
-       # Copy files to the input folder
-       cp 02_assembly/*.fasta "{params.infolder}"
-       # Check if the output file exists before running dRep dereplicate
-       test -f "{output.o1}" && 2>&1 || dRep dereplicate "{params.outfolder}" -g 02_assembly/dRep_samples/*.fasta --ignoreGenomeQuality --SkipSecondary
-       """
+        """
+        if [ -d "{params.infolder}" ]; then
+            rm -rf "{params.infolder}"
+        fi
+        if [ -d "{params.outfolder}" ]; then
+            rm -rf "{params.outfolder}"
+        fi
+        mkdir -p "{params.infolder}"
+        mkdir -p "{params.outfolder}"
+        cp 02_assembly/*.fasta "{params.infolder}"
+        test -f "{output.o1}" && 2>&1 || dRep dereplicate "{params.outfolder}" -g 02_assembly/dRep_samples/*.fasta --ignoreGenomeQuality --SkipSecondary
+        """
 rule GTDBtk:
     conda:
-       "mg-binning3"
+        "mg-binning3"
     input:
-       r1 = "02_assembly/dRep_samples/{sample}_MaxBin.002.fasta"
+        r1 = "02_assembly/dRep_samples/{sample}_MaxBin.002.fasta"
     output:
-       o2 = "03_assignment/GTDBtk/gtdbtk.log",
-       o3 = "03_assignment/GTDBtk/mashoutput.msh"
+        o2 = "03_assignment/GTDBtk/gtdbtk.log",
+        o3 = "03_assignment/GTDBtk/mashoutput.msh"
     params: 
-       o1 = directory("03_assignment/GTDBtk"),
-       i1 = "02_assembly/dRep_samples/"
+        o1 = directory("03_assignment/GTDBtk"),
+        i1 = "02_assembly/dRep_samples/"
     threads: 20
     log:
-       "logs/GTDBtk/gtdb.log"
+        "logs/GTDBtk/gtdb.log"
     benchmark:
-       "benchmarks/GTDBtk/bm.txt"
+        "benchmarks/GTDBtk/bm.txt"
     shell:
-       """
-       mkdir -p 03_assignment/
-       mkdir -p 03_assignment/GTDBtk
-       gtdbtk classify_wf --mash_db 03_assignment/GTDBtk/mashoutput.msh --genome_dir {params.i1} --out_dir {params.o1} --extension fasta
-       """
+        """
+        mkdir -p 03_assignment/
+        mkdir -p 03_assignment/GTDBtk
+        gtdbtk classify_wf --mash_db 03_assignment/GTDBtk/mashoutput.msh --genome_dir {params.i1} --out_dir {params.o1} --extension fasta
+        """
 
 
