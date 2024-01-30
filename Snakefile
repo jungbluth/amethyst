@@ -383,21 +383,16 @@ rule dRep:
        if [ -d "{params.infolder}" ]; then
            rm -rf "{params.infolder}"
        fi
-
        # Check if the output folder exists and wipe it if it does
        if [ -d "{params.outfolder}" ]; then
            rm -rf "{params.outfolder}"
        fi
-
        # Create the input folder
        mkdir -p "{params.infolder}"
-
        # Create the output folder
        mkdir -p "{params.outfolder}"
-
        # Copy files to the input folder
        cp 02_assembly/*.fasta "{params.infolder}"
-
        # Check if the output file exists before running dRep dereplicate
        test -f "{output.o1}" && 2>&1 || dRep dereplicate "{params.outfolder}" -g 02_assembly/dRep_samples/*.fasta --ignoreGenomeQuality --SkipSecondary
        """
