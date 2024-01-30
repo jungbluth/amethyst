@@ -25,8 +25,8 @@ Note- this is a prioritized list of features to add to Amethyst. This is subject
 | sourmash     | diversity analysis- assembly based| complete    |
 | maxbin2      | binning                           | complete    |
 | checkm       | bin/MAG quality                   | complete    |
-| dRep         | dereplication of bins/MAGs        | tested      |
-| GTDB-Tk      | taxonomic assignment of bins/MAGs | written     |
+| dRep         | dereplication of bins/MAGs        | complete    |
+| GTDB-Tk      | taxonomic assignment of bins/MAGs | complete    |
 | nonpareil    | read-based coverage analysis      | backlog     |
 | sourmash     | diversity analysis- read based    | backlog     |
 | humann       | functional analysis               | backlog     |
