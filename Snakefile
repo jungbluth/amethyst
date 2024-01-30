@@ -414,9 +414,9 @@ rule GTDBtk:
        i1 = "02_assembly/dRep_samples/"
     threads: 20
     log:
-       "logs/GTDBtk/{sample}.log"
+       "logs/GTDBtk/gtdb.log"
     benchmark:
-       "benchmarks/GTDBtk/{sample}.txt"
+       "benchmarks/GTDBtk/bm.txt"
     shell:
        """
        mkdir -p 03_assignment/
