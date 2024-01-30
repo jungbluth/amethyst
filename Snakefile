@@ -42,11 +42,6 @@ rule all:
         expand("03_assignment/GTDBtk/mashoutput.msh", sample=SAMPLES),
         expand("03_assignment/GTDBtk/gtdbtk.log", sample=SAMPLES)
 
-
-
-o2 = "03_assignment/GTDBtk/gtdbtk.log",
-       o3 = "03_assignment/GTDBtk/mashoutput.msh"
-
 # Run all the samples through FastQC 
 rule fastqc: 
     conda: 
