@@ -11,11 +11,14 @@ for file in files:
     match = pattern.match(file)
     if match:
         SAMPLES.append(match.group(1))
+
 ruleorder: fastqc > multiqc > fastp > megahit > bbdb > bbmap > prodigal > prokka > interleave > sourmash > maxbin2 > checkm > dRep  
 # Master rule that snakemake uses to determine which files need to be 
 # generated.
 rule all:
     input:
+        expand("00_data/fastq/R1/R1_{sample}_R1.fastq", sample=SAMPLES),
+        expand("00_data/fastq/R2/R2_{sample}_R2.fastq", sample=SAMPLES),
         expand("00_data/fastq/fastqc-R1/R1_{sample}_R1_fastqc.html", sample=SAMPLES),
         expand("00_data/fastq/fastqc-R2/R2_{sample}_R2_fastqc.html", sample=SAMPLES),
         "00_data/fastq/fastqc-R1/multiqc_report.html",
@@ -35,12 +38,11 @@ rule all:
         expand("02_assembly/sourmash/tax_out/{sample}_sourmash_gather_out.csv", sample=SAMPLES),
         expand("02_assembly/{sample}_MaxBin.abund2", sample=SAMPLES),
         expand("02_assembly/{sample}/{sample}.contigs.fa", sample=SAMPLES),
-        expand("02_assembly/checkm/results/bins/genes.gff", sample=SAMPLES),
         "02_assembly/dRep_out/log/logger.log",
-        expand("02_assembly/dRep_samples/{sample}_MaxBin.001.fasta",sample=SAMPLES),
-        #expand("02_assembly/dRep_samples/{sample}_MaxBin.002.fasta",sample=SAMPLES),
-        expand("03_assignment/GTDBtk/mashoutput.msh", sample=SAMPLES),
-        expand("03_assignment/GTDBtk/gtdbtk.log", sample=SAMPLES)
+        "03_assignment/GTDBtk/mashoutput.msh",
+        "02_assembly/checkm/results/bins/genes.gff", 
+        "03_assignment/GTDBtk/gtdbtk.log",
+        "README.md"
 
 # Run all the samples through FastQC 
 rule fastqc: 
@@ -364,12 +366,12 @@ rule dRep:
     conda:
         "mg-binning3"
     input:
-        r1 = "00_data/fastq/fastqc-R2/multiqc_report.html"
+        r1 = "README.md"
     output:
         o1 = "02_assembly/dRep_out/log/logger.log"
     priority: 1
     params:
-        infolder = "02_assembly/dRep_samples",
+        infolder = "02_assembly/dRep_data",
         outfolder = "02_assembly/dRep_out"
     threads: 20
     log:
@@ -387,19 +389,21 @@ rule dRep:
         mkdir -p "{params.infolder}"
         mkdir -p "{params.outfolder}"
         cp 02_assembly/*.fasta "{params.infolder}"
-        test -f "{output.o1}" && 2>&1 || dRep dereplicate "{params.outfolder}" -g 02_assembly/dRep_samples/*.fasta --ignoreGenomeQuality --SkipSecondary
+        test -f "{output.o1}" && 2>&1 || dRep dereplicate "{params.outfolder}" -g 02_assembly/dRep_data/*.fasta --ignoreGenomeQuality --SkipSecondary
         """
+
+
 rule GTDBtk:
     conda:
         "mg-binning3"
     input:
-        r1 = "02_assembly/dRep_samples/{sample}_MaxBin.002.fasta"
+        r1 = "logs/dRep/dRep.log"
     output:
         o2 = "03_assignment/GTDBtk/gtdbtk.log",
         o3 = "03_assignment/GTDBtk/mashoutput.msh"
     params: 
         o1 = directory("03_assignment/GTDBtk"),
-        i1 = "02_assembly/dRep_samples/"
+        i1 = "02_assembly/dRep_data/"
     threads: 20
     log:
         "logs/GTDBtk/gtdb.log"
