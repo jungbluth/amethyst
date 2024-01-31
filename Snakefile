@@ -370,7 +370,6 @@ rule dRep:
     priority: 1
     params:
         infolder = "02_assembly/dRep_samples",
-        in2 = "02_assembly/dRep_samples/*.fasta",
         outfolder = "02_assembly/dRep_out"
     threads: 20
     log:
