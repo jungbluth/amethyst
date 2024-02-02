@@ -54,6 +54,7 @@ rule fastqc:
     output:
         o1 = "00_data/fastq/fastqc-R1/R1_{sample}_R1_fastqc.html", 
         o2 = "00_data/fastq/fastqc-R2/R2_{sample}_R2_fastqc.html"
+    group: 1
     priority: 13
     params:
         outfolder1 = "00_data/fastq/fastqc-R1",
@@ -76,6 +77,7 @@ rule multiqc:
     output:
         "00_data/fastq/fastqc-R1/multiqc_report.html",
         "00_data/fastq/fastqc-R2/multiqc_report.html"
+    group: 2
     priority: 12
     params:
         outfolder1 = "00_data/fastq/fastqc-R1",
