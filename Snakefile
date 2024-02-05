@@ -36,13 +36,14 @@ rule all:
         expand("01_qc/trimmed_reads/test/{sample}_1.fq", sample=SAMPLES),
         expand("01_qc/trimmed_reads/test/{sample}_2.fq", sample=SAMPLES),
         expand("02_assembly/sourmash/tax_out/{sample}_sourmash_gather_out.csv", sample=SAMPLES),
-        expand("02_assembly/{sample}_MaxBin.abund2", sample=SAMPLES),
+        expand("02_assembly/{sample}_MaxBin.abundance", sample=SAMPLES),
         expand("02_assembly/{sample}/{sample}.contigs.fa", sample=SAMPLES),
         "02_assembly/dRep_out/log/logger.log",
         "03_assignment/GTDBtk/mashoutput.msh",
         "02_assembly/checkm/results/bins/genes.gff", 
         "03_assignment/GTDBtk/gtdbtk.log",
         "README.md"
+
 
 # Run all the samples through FastQC 
 rule fastqc: 
@@ -327,8 +328,7 @@ rule maxbin2:
         r2 = "01_qc/trimmed_reads/test/{sample}_1.fq",
         r3 = "01_qc/trimmed_reads/test/{sample}_2.fq"
     output:
-        o1 = "02_assembly/{sample}_MaxBin.001.fasta",
-        o2 = "02_assembly/{sample}_MaxBin.abund2"
+        o2 = "02_assembly/{sample}_MaxBin.abundance"
     priority: 4
     params:
         outfolder = "02_assembly/{sample}_MaxBin"
