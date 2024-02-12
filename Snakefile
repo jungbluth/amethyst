@@ -40,7 +40,7 @@ rule all:
         expand("02_assembly/{sample}/{sample}.contigs.fa", sample=SAMPLES),
         "02_assembly/dRep_out/log/logger.log",
         "03_assignment/GTDBtk/mashoutput.msh",
-        "02_assembly/checkm/results/bins/genes.gff", 
+        "02_assembly/checkm/results/checkm.log", 
         "03_assignment/GTDBtk/gtdbtk.log",
         "README.md"
 
@@ -350,7 +350,7 @@ rule checkm:
     input:
         r1 = "00_data/fastq/fastqc-R1/multiqc_report.html"
     output:
-        o2 = "02_assembly/checkm/results/bins/genes.gff"    
+        o2 = "02_assembly/checkm/results/checkm.log"    
     params:
         outfolder = "02_assembly/checkm",
         outfolder2 = "02_assembly/checkm/results"
