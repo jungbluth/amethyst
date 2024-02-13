@@ -163,4 +163,3 @@ dependencies:
       - checkm-genome==1.2.2
       - dendropy==4.6.1
       - scipy==1.11.4
-prefix: /work/hpc/users/rstoro/conda/envs/checkm
